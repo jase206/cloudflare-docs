@@ -1,5 +1,7 @@
 # build output
 dist/
+distmd/
+distllms/
 # generated types
 .astro/
 
@@ -26,3 +28,7 @@ pnpm-debug.log*
 .wrangler
 /assets/secrets
 /worker/functions/
+
+.idea
+
+tools/relevant_changed_files.txt

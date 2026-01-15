@@ -3,22 +3,16 @@ pcx_content_type: concept
 title: Maximum transmission unit and maximum segment size
 sidebar:
   label: MTU and MSS
+  order: 5
 ---
 
 import { Render } from "~/components";
 
 <Render
-	file="mtu-mss/mtu-mss"
-	product="magic-transit"
-	params={{ productName: "Magic WAN" }}
+	file="reference/mtu-mss"
+	product="networking-services"
+	params={{
+		magicWord: "Magic WAN",
+		productName: "Magic WAN"
+		}}
 />
-
-## MSS clamping recommendations
-
-### GRE tunnels as off-ramp
-
-<Render file="mtu-mss/mss-clamping-gre" />
-
-### IPsec tunnels
-
-<Render file="mtu-mss/mss-clamping-ipsec" />

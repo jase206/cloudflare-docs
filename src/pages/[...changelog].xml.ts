@@ -2,23 +2,21 @@ import rss from "@astrojs/rss";
 import { getCollection, getEntry } from "astro:content";
 import type { APIRoute } from "astro";
 import { marked, type Token } from "marked";
-import { getWranglerChangelog } from "~/util/changelogs";
 import { slug } from "github-slugger";
 import { entryToString } from "~/util/container";
 
 export async function getStaticPaths() {
-	const changelogs = await getCollection("docs", (entry) => {
+	const releaseNotes = await getCollection("docs", (entry) => {
 		return (
-			(entry.data.pcx_content_type === "changelog" &&
-				entry.data.changelog_file_name) ||
-			entry.data.changelog_product_area_name
+			entry.data.pcx_content_type === "changelog" &&
+			entry.data.release_notes_file_name
 		);
 	});
 
-	return changelogs.map((entry) => {
+	return releaseNotes.map((entry) => {
 		return {
 			params: {
-				changelog: entry.slug + `/index`,
+				changelog: entry.id + `/index`,
 			},
 			props: {
 				entry,
@@ -40,28 +38,18 @@ export const GET: APIRoute = async (context) => {
 
 	const entry = context.props.entry;
 
-	if (
-		!entry.data.changelog_file_name &&
-		!entry.data.changelog_product_area_name
-	) {
+	if (!entry.data.release_notes_file_name) {
 		throw new Error(
-			`One of changelog_file_name or changelog_product_area_name is required on ${entry.id}, to generate RSS feeds.`,
+			`release_notes_file_name is required on ${entry.id}, to generate RSS feeds.`,
 		);
 	}
 
-	const changelogs = await getCollection("changelogs", (changelog) => {
-		return (
-			entry.data.changelog_file_name?.includes(changelog.id) ||
-			changelog.data.productArea === entry.data.changelog_product_area_name
-		);
+	const releaseNotes = await getCollection("release-notes", (releaseNote) => {
+		return entry.data.release_notes_file_name?.includes(releaseNote.id);
 	});
 
-	if (entry.data.changelog_file_name?.includes("wrangler")) {
-		changelogs.push(await getWranglerChangelog());
-	}
-
 	const mapped = await Promise.all(
-		changelogs.flatMap((product) => {
+		releaseNotes.flatMap((product) => {
 			return product.data.entries.map(async (entry) => {
 				let description;
 				if (entry.individual_page) {
@@ -79,7 +67,8 @@ export const GET: APIRoute = async (context) => {
 							`Changelog entry points to ${link.slice(1, -1)} but unable to find entry with that slug`,
 						);
 
-					description = (await entryToString(page)) ?? page.body;
+					description =
+						(await entryToString(page, context.locals)) ?? page.body;
 				} else {
 					description = entry.description;
 				}
@@ -114,13 +103,10 @@ export const GET: APIRoute = async (context) => {
 		return a.date < b.date ? 1 : a.date > b.date ? -1 : 0;
 	});
 
-	const rssName =
-		entry.data.changelog_product_area_name || changelogs[0].data.productName;
+	const rssName = releaseNotes[0].data.productName;
 
 	const site = new URL(context.site ?? "");
-	site.pathname = entry.slug.concat("/");
-
-	const isArea = Boolean(entry.data.changelog_product_area_name);
+	site.pathname = entry.id.concat("/");
 
 	return rss({
 		title: `Changelog | ${rssName}`,
@@ -135,7 +121,6 @@ export const GET: APIRoute = async (context) => {
 				}) as string,
 				pubDate: new Date(entry.date),
 				link: entry.link,
-				customData: isArea ? `<product>${entry.product}</product>` : undefined,
 			};
 		}),
 	});

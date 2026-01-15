@@ -8,6 +8,8 @@ head:
     content: Functions reference
 ---
 
+import { Type, MetaInfo } from "~/components";
+
 The Cloudflare Rules language provides functions for manipulating and validating values in an expression:
 
 - [Transformation functions](#transformation-functions) manipulate values extracted from an HTTP request.
@@ -31,7 +33,8 @@ The Rules language supports these transformation functions:
 
 ### `any`
 
-`any(Array<Boolean>)` → `Boolean`
+{/* prettier-ignore */}
+<code>any(<Type text="Array<Boolean>" />)</code>: <Type text="Boolean" />
 
 Returns `true` when the comparison operator in the argument returns `true` for _any_ of the values in the argument array. Returns `false` otherwise.
 
@@ -43,7 +46,8 @@ any(url_decode(http.request.body.form.values[*])[*] contains "an xss attack")
 
 ### `all`
 
-`all(Array<Boolean>)` → `Boolean`
+{/* prettier-ignore */}
+<code>all(<Type text="Array<Boolean>" />)</code>: <Type text="Boolean" />
 
 Returns `true` when the comparison operator in the argument returns `true` for _all_ values in the argument array. Returns `false` otherwise.
 
@@ -55,7 +59,8 @@ all(http.request.headers["content-type"][*] == "application/json")
 
 ### `cidr`
 
-`cidr(address (IP address), ipv4_network_bits (Integer), ipv6_network_bits (Integer))` → `IP address`
+{/* prettier-ignore */}
+<code>cidr(address <Type text="IP address" />, ipv4_network_bits <Type text="Integer" />, ipv6_network_bits <Type text="Integer" />)</code>: <Type text="IP address" />
 
 Returns the network address corresponding to an IP address (IPv4 or IPv6), given the provided IPv4 and IPv6 network bits (which determine the corresponding netmasks).
 
@@ -68,13 +73,14 @@ Examples:
 - If `ip.src` is `113.10.0.2`, `cidr(ip.src, 24, 24)` will return `113.10.0.0`.
 - If `ip.src` is `2001:0000:130F:0000:0000:09C0:876A:130B`, `cidr(ip.src, 24, 24)` will return `2001:0000:0000:0000:0000:0000:0000:0000`.
 
-:::caution
+:::note
 You can only use the `cidr()` function in [custom rules](/waf/custom-rules/) and [rate limiting rules](/waf/rate-limiting-rules/).
 :::
 
 ### `cidr6`
 
-`cidr6(address (IP address), ipv6_network_bits (Integer))` → `IP address`
+{/* prettier-ignore */}
+<code>cidr6(address <Type text="IP address" />, ipv6_network_bits <Type text='Integer' />)</code>: <Type text="IP address" />
 
 Returns the IPv6 network address corresponding to an IPv6 address, given the provided network bits (which determine the netmask). If you provide an IPv4 address in the first parameter, it will be returned unchanged.
 
@@ -89,21 +95,25 @@ Examples:
 - If `ip.src` is `2001:0000:130F:0000:0000:09C0:876A:130B`, `cidr6(ip.src, 24)` will return `2001:0000:0000:0000:0000:0000:0000:0000`.
 - If `ip.src` is `113.10.0.2`, `cidr6(ip.src, 24)` will return `113.10.0.2` (unchanged).
 
-:::caution
+:::note
 You can only use the `cidr6()` function in [custom rules](/waf/custom-rules/) and [rate limiting rules](/waf/rate-limiting-rules/).
 :::
 
 ### `concat`
 
-`concat(String | Integer | Bytes | Array elements)` → `String`
+{/* prettier-ignore */}
+<code>concat(<Type text="String | Bytes | Array" />)</code>: <Type text="String | Array" />
 
-Takes a comma-separated list of values. Concatenates the argument values into a single String.
+Takes a comma-separated list of values. Concatenates the argument values into a single String or array.
 
-For example, `concat("String1", " ", "String", 2)` will return `"String1 String2"`.
+The return type depends on the type of input arguments. For example, if you concatenate arrays, the function will return an array.
+
+For example, `concat("String1", " ", "String", "2")` will return `"String1 String2"`.
 
 ### `decode_base64`
 
-`decode_base64(source (String))` → `String`
+{/* prettier-ignore */}
+<code>decode_base64(source <Type text="String" />)</code>: <Type text="String" />
 
 Decodes a Base64-encoded String specified in `source`.
 
@@ -111,29 +121,98 @@ Decodes a Base64-encoded String specified in `source`.
 
 For example, with the following HTTP request header: `client_id: MTIzYWJj`, `(any(decode_base64(http.request.headers["client_id"][*])[*] eq "123abc"))` would return `true`.
 
-:::caution
-You can only use the `decode_base64()` function in [header modification rules](/rules/transform/), [custom rules](/waf/custom-rules/), and [rate limiting rules](/waf/rate-limiting-rules/).
+:::note
+You can only use the `decode_base64()` function in [Transform Rules](/rules/transform/), [custom rules](/waf/custom-rules/), and [rate limiting rules](/waf/rate-limiting-rules/).
 :::
 
 ### `ends_with`
 
-`ends_with(source (String), substring (String))` → `Boolean`
+{/* prettier-ignore */}
+<code>ends_with(source <Type text="String" />, substring <Type text="String" />)</code>: <Type text="Boolean" />
 
 Returns `true` when the source ends with a given substring. Returns `false` otherwise. The source cannot be a literal value (like `"foo"`).
 
 For example, if `http.request.uri.path` is `"/welcome.html"`, then `ends_with(http.request.uri.path, ".html")` will return `true`.
 
+### `join`
+
+{/* prettier-ignore */}
+<code>join(items <Type text="Array<String>" />, separator <Type text="String" />)</code>: <Type text="String" />
+
+Returns a string which is the concatenation of the strings in `items` with the `separator` between each item.
+
+If any of the arguments is nil, the returned value will be nil.<br/>
+If the `items` array is empty, the returned value will be an empty string.<br/>
+If the `items` array contains a single item, then no concatenation occurs and the (single) item will be returned as is.
+
+This function does the opposite of the [`split()`](#split) function.
+
+Example:
+
+```txt
+# Joins all HTTP request header names into a single string, with names separated by commas
+join(http.request.headers.names, ",")
+```
+
+:::note
+The `join()` function is only available in [Transform Rules](/rules/transform/), [custom rules](/waf/custom-rules/), and [Custom Error Rules](/rules/custom-errors/#custom-error-rules).
+:::
+
+### `has_key`
+
+{/* prettier-ignore */}
+<code>has_key(map: <Type text="Map<T>" />, key: <Type text="String" />)</code>: <Type text="Boolean" />
+
+Returns true if the `key` specified in the second argument, which can be a literal or a dynamic string, is an existing key in the `map` provided as first argument; returns false otherwise.
+
+The data type of the values in `map` (indicated by `T`) can be any type.
+
+If any of the arguments is nil, the returned value will be nil.
+
+Examples:
+
+```txt
+# Check if an HTTP request header exists:
+has_key(http.request.headers, "x-my-header")
+
+# Check if a request header exists based on the name of the first query argument:
+has_key(http.request.headers, lower(http.request.uri.args.names[0]))
+```
+
+### `has_value`
+
+{/* prettier-ignore */}
+<code>has_value(collection: <Type text="Map<T> | Array<T>" />, value: <Type text="T" />)</code>: <Type text="Boolean" />
+
+Returns true if the `value` specified in the second argument, which can be a literal or a dynamic value, is found in the `collection` provided as first argument; returns false otherwise.
+
+The data type of the values in the `collection` (indicated by `T`) must match the data type of the provided `value`. Additionally, `T` must be a primitive data type, that is, it must be one of `Boolean`, `Integer`, `String`, `Bytes`, or `IP address`.
+
+If any of the arguments is nil, the returned value will be nil.
+
+Examples:
+
+```txt
+# Check if there is an HTTP request header with the exact name 'X-My-Header'
+has_value(http.request.headers.name, "X-My-Header")
+
+# Check if there is a request header with the exact name provided as the first query argument:
+has_value(http.request.headers.name, http.request.uri.args.names[0])
+```
+
 ### `len`
 
-`len(String | Bytes)` → `Integer`
+{/* prettier-ignore */}
+<code>len(<Type text="String | Bytes | Array" />)</code>: <Type text="Integer" />
 
-Returns the byte length of a String or Bytes field.
+Returns the byte length of a String or Bytes value, or the number of elements in an array.
 
-For example, if `http.host` is `"example.com"`, then `len(http.host)` will return `11`.
+For example, if the value of `http.host` is `"example.com"`, then `len(http.host)` will return `11`.
 
 ### `lookup_json_integer`
 
-`lookup_json_integer(field (String), key (String | Integer) [, key (String | Integer), ...])` → `Integer`
+{/* prettier-ignore */}
+<code>lookup_json_integer(field <Type text="String" />, key <Type text="String | Integer" />, key <Type text="String | Integer" /> <MetaInfo text='optional' />, ...)</code>: <Type text="Integer" />
 
 Returns the integer value associated with the supplied `key` in `field`.
 
@@ -167,7 +246,8 @@ Examples:
 
 ### `lookup_json_string`
 
-`lookup_json_string(field (String) key (String | Integer) [, key (String | Integer), ...])` → `String`
+{/* prettier-ignore */}
+<code>lookup_json_string(field <Type text="String" />, key <Type text="String | Integer" />, key <Type text="String | Integer" /> <MetaInfo text='optional' />, ...)</code>: <Type text="String" />
 
 Returns the string value associated with the supplied `key` in `field`.
 
@@ -199,7 +279,8 @@ Examples:
 
 ### `lower`
 
-`lower(String)` → `String`
+{/* prettier-ignore */}
+<code>lower(<Type text="String" />)</code>: <Type text="String" />
 
 Converts a string field to lowercase. Only uppercase ASCII bytes are converted. All other bytes are unaffected.
 
@@ -207,7 +288,8 @@ For example, if `http.host` is `"WWW.cloudflare.com"`, then `lower(http.host) ==
 
 ### `regex_replace`
 
-`regex_replace(source (String), regular_expression (String), replacement (String))` → `String`
+{/* prettier-ignore */}
+<code>regex_replace(source <Type text="String" />, regular_expression <Type text="String" />, replacement <Type text="String" />)</code>: <Type text="String" />
 
 Replaces a part of a source string matched by a regular expression with a replacement string, returning the result. The replacement string can contain references to regular expression capture groups (for example, `${1}` and `${2}`), up to eight replacement references.
 
@@ -233,21 +315,100 @@ Examples:
 
 Create capture groups by putting part of the regular expression in parentheses. Then, reference a capture group using `${<NUMBER>}` in the replacement string, where `<NUMBER>` is the number of the capture group.
 
-:::caution
-You can only use the `regex_replace()` function in rewrite expressions of [Transform Rules](/rules/transform/) and target URL expressions of [dynamic URL redirects](/rules/url-forwarding/single-redirects/).
+You can only use the `regex_replace()` function once in an expression, and you cannot nest it with the [`wildcard_replace()`](/ruleset-engine/rules-language/functions/#wildcard_replace) function.
+
+:::note
+Currently, the `regex_replace()` function is only available in rewrite expressions of [Transform Rules](/rules/transform/) and target URL expressions of [dynamic URL redirects](/rules/url-forwarding/single-redirects/).
 :::
 
 ### `remove_bytes`
 
-`remove_bytes(Bytes)` → `Bytes`
+{/* prettier-ignore */}
+<code>remove_bytes(<Type text="Bytes" />)</code>: <Type text="Bytes" />
 
 Returns a new byte array with all the occurrences of the given bytes removed.
 
 For example, if `http.host` is `"www.cloudflare.com"`, then `remove_bytes(http.host, "\x2e\x77")` will return `"cloudflarecom"`.
 
+### `remove_query_args`
+
+{/* prettier-ignore */}
+<code>remove_query_args(field <Type text="String" />, query_param1 <Type text="String" />, query_param2 <Type text="String" />, ...)</code>: <Type text="String" />
+
+Removes one or more query string parameters from a URI query string. Returns a string without the specified parameters.
+
+The `field` must be one of the following:
+
+- `http.request.uri.query`
+- `raw.http.request.uri.query`
+
+The `field` cannot be a literal value such as `"search=foo&order=asc"`.
+
+The `remove_query_args()` function will remove all specified parameters (as `query_param1`, `query_param2`, etc.) , including repeated occurrences of the same parameter.
+
+The ordering of unaffected query parameters will be preserved.
+
+Examples:
+
+```txt
+// If http.request.uri.query is "order=asc&country=GB":
+
+remove_query_args(http.request.uri.query, "country")  will return "order=asc"
+remove_query_args(http.request.uri.query, "order")    will return "country=GB"
+remove_query_args(http.request.uri.query, "search")   will return "order=asc&country=GB" (unchanged)
+
+// If http.request.uri.query is "category=Foo&order=desc&category=Bar":
+
+remove_query_args(http.request.uri.query, "order")    will return "category=Foo&category=Bar"
+remove_query_args(http.request.uri.query, "category") will return "order=desc"
+```
+
+:::note
+You can only use the `remove_query_args()` function in [rewrite expressions of Transform Rules](/rules/transform/).
+:::
+
+### `split`
+
+{/* prettier-ignore */}
+<code>split(input <Type text="String" />, separator <Type text="String" />, limit <Type text="Integer" />)</code>: <Type text="Array<String>" />
+
+Splits the `input` string into an array of strings by breaking the initial string at every occurrence of the `separator` string. The returned array will contain at most `limit` number of elements.
+
+If you provide a `limit` value lower than the actual number of substrings in the split string, the last element of the returned array will contain the remainder of the string.
+
+The `separator` must be a non-empty literal string.
+
+The `limit` is mandatory, and it must be a literal integer between 1 and 128.
+
+If `input` is nil, the returned value will be nil.
+
+This function does the opposite of the [`join()`](#join) function.
+
+Examples:
+
+```txt
+# Split a comma-separated list of categories obtained from an HTTP request header.
+
+# A) Consider the following HTTP request header:
+x-categories: groceries,electronics,diy,auto
+
+split(http.request.headers["x-categories"][0], ",", 64)  will return ["groceries", "electronics", "diy", "auto"]
+split(http.request.headers["x-categories"][0], ",", 3)   will return ["groceries", "electronics", "diy,auto"]
+
+# B) Consider the following HTTP request header:
+x-categories: groceries,,electronics
+
+split(http.request.headers["x-categories"][0], ",", 64)  will return ["groceries", "", "electronics"]
+```
+
+:::note
+The `split()` function is only available in [response header transform rules](/rules/transform/response-header-modification/) and [Custom Error Rules](/rules/custom-errors/#custom-error-rules).
+:::
+
 ### `starts_with`
 
-`starts_with(source (String), substring (String))` → `Boolean`
+{/* prettier-ignore */}
+<code>starts_with(source <Type text="String" />, substring <Type text="String" />)</code>: <Type text="Boolean" />
 
 Returns `true` when the source starts with a given substring. Returns `false` otherwise. The source cannot be a literal value (like `"foo"`).
 
@@ -255,9 +416,10 @@ For example, if `http.request.uri.path` is `"/blog/first-post"`, then `starts_wi
 
 ### `substring`
 
-`substring(field (String | Bytes), start (Integer) [, end (Integer)])` → `String`
+{/* prettier-ignore */}
+<code>substring(field <Type text="String | Bytes" />, start <Type text="Integer" />, end <Type text="Integer" /> <MetaInfo text='optional' />)</code>: <Type text="String" />
 
-Returns part of the `field` value (the value of a String or Bytes [field](/ruleset-engine/rules-language/fields/)) from the `start` byte index up to (but excluding) the `end` byte index. The first byte in `field` has index `0`. If you do not provide the optional `end` index, the function returns the part of the string from `start` index to the end of the string.
+Returns part of the `field` value (the value of a String or Bytes [field](/ruleset-engine/rules-language/fields/reference/)) from the `start` byte index up to (but excluding) the `end` byte index. The first byte in `field` has index `0`. If you do not provide the optional `end` index, the function returns the part of the string from `start` index to the end of the string.
 
 The `start` and `end` indexes can be negative integer values, which allows you to access characters from the end of the string instead of the beginning.
 
@@ -274,7 +436,8 @@ substring(http.request.body.raw, 0, -2)  will return "asdfgh"
 
 ### `to_string`
 
-`to_string(Integer | Boolean | IP address)` → `String`
+{/* prettier-ignore */}
+<code>to_string(<Type text="Integer | Boolean | IP address" />)</code>: <Type text="String" />
 
 Returns the string representation of an Integer, Boolean, or IP address value.
 
@@ -288,13 +451,14 @@ to_string(cf.bot_management.score)   will return "5"
 to_string(ssl)                       will return "true"
 ```
 
-:::caution
+:::note
 You can only use the `to_string()` function in rewrite expressions of [Transform Rules](/rules/transform/) and target URL expressions of [dynamic URL redirects](/rules/url-forwarding/single-redirects/).
 :::
 
 ### `upper`
 
-`upper(String)` → `String`
+{/* prettier-ignore */}
+<code>upper(<Type text="String" />)</code>: <Type text="String" />
 
 Converts a string field to uppercase. Only lowercase ASCII bytes are converted. All other bytes are unaffected.
 
@@ -302,7 +466,8 @@ For example, if `http.host` is`"www.cloudflare.com"`, then `upper(http.host)` wi
 
 ### `url_decode`
 
-`url_decode(source (String)[, options (String)])` → `String`
+{/* prettier-ignore */}
+<code>url_decode(source <Type text="String" />, options <Type text="String" /> <MetaInfo text='optional' />)</code>: <Type text="String" />
 
 Decodes a URL-formatted string defined in `source`, as in the following:
 
@@ -327,23 +492,28 @@ url_decode("%2520", "r")   will return " "
 
 // Using url_decode() with the any() function:
 any(url_decode(http.request.body.form.values[*])[*] contains "an xss attack")
+
+// Using the u option to match a specific alphabet
+url_decode(http.request.uri.path) matches "(?u)\p{Hangul}+"
 ```
 
 ### `uuidv4`
 
-`uuidv4(Bytes)` → `String`
+{/* prettier-ignore */}
+<code>uuidv4(source <Type text="Bytes" />)</code>: <Type text="String" />
 
-Generates a random UUIDv4 (Universally Unique Identifier, version 4) based on the given argument (a source of randomness). To obtain an array of random bytes, use the [`cf.random_seed`](/ruleset-engine/rules-language/fields/dynamic-fields/#cfrandom_seed) field.
+Generates a random UUIDv4 (Universally Unique Identifier, version 4) based on the given argument (a source of randomness). To obtain an array of random bytes, use the [`cf.random_seed`](/ruleset-engine/rules-language/fields/reference/cf.random_seed/) field.
 
 For example, `uuidv4(cf.random_seed)` will return a UUIDv4 similar to `49887398-6bcf-485f-8899-f15dbef4d1d5`.
 
-:::caution
+:::note
 You can only use the `uuidv4()` function in [rewrite expressions of Transform Rules](/rules/transform/).
 :::
 
 ### `wildcard_replace`
 
-`wildcard_replace(source (Bytes), wildcard_pattern (Bytes), replacement (Bytes) [, flags (Bytes)])` → `String`
+{/* prettier-ignore */}
+<code>wildcard_replace(source <Type text="Bytes" />, wildcard_pattern <Type text="Bytes" />, replacement <Type text="Bytes" />, flags <Type text="Bytes" /> <MetaInfo text='optional' />)</code>: <Type text="String" />
 
 Replaces a `source` string, matched by a literal with zero or more `*` wildcard metacharacters, with a replacement string, returning the result. The replacement string can contain references to wildcard capture groups (for example, `${1}` and `${2}`), up to eight replacement references.
 
@@ -358,6 +528,8 @@ To enter a literal `$` character in the `replacement` parameter, you must escape
 To perform case-sensitive wildcard matching, set the `flags` parameter to `"s"`.
 
 This function uses lazy matching, that is, it tries to match each `*` metacharacter with the shortest possible string.
+
+You can only use the `wildcard_replace()` function once in an expression, and you cannot nest it with the [`regex_replace()`](/ruleset-engine/rules-language/functions/#regex_replace) function.
 
 Examples:
 
@@ -381,7 +553,7 @@ Examples:
 
 For more examples of wildcard matching, refer to [Wildcard matching](/ruleset-engine/rules-language/operators/#wildcard-matching).
 
-:::caution
+:::note
 Currently, you can only use the `wildcard_replace()` function in rewrite expressions of [URL rewrites](/rules/transform/url-rewrite/) and target URL expressions of [dynamic URL redirects](/rules/url-forwarding/single-redirects/).
 :::
 
@@ -389,7 +561,8 @@ Currently, you can only use the `wildcard_replace()` function in rewrite express
 
 ### `bit_slice`
 
-`bit_slice(protocol (String), offset_start (Number), offset_end (Number))` → `Number`
+{/* prettier-ignore */}
+<code>bit_slice(protocol <Type text="String" />, offset_start <Type text="Number" />, offset_end <Type text="Number" />)</code>: <Type text="Number" />
 
 This function looks for matches on a given slice of bits.
 
@@ -424,28 +597,22 @@ is_timed_hmac_valid_v0(
 
 The `is_timed_hmac_valid_v0()` function has these parameter definitions:
 
-- `Key` (String literal)
-
+- `Key` <Type text="String literal" />
   - Specifies the secret cryptographic key for validating the HMAC.
 
-- `MessageMAC` (String)
-
+- `MessageMAC` <Type text="String" />
   - Contains a concatenation of these HMAC elements: `message`, `separator`, `timestamp`, `mac`. For a definition and an example, refer to [MessageMAC](#messagemac).
 
-- `ttl` (Integer literal)
-
+- `ttl` <Type text="Integer literal" />
   - Defines the time-to-live for the HMAC token, expressed in seconds. Determines how long the token is valid, relative to the time it was issued.
 
-- `currentTimeStamp` (Integer)
-
+- `currentTimeStamp` <Type text="Integer" />
   - Represents the UNIX timestamp when Cloudflare received the request, expressed in seconds. Pass the `http.request.timestamp.sec` field as an approximate value to this argument.
 
-- `lengthOfSeparator` (Integer literal, optional)
-
+- `lengthOfSeparator` <Type text="Integer literal" /> <MetaInfo text='optional' />
   - Specifies the length of the `separator` between the `timestamp` and the `message` in the `MessageMAC`. Expressed in bytes, with a default value of `0`.
 
-- `flags` (String literal, optional)
-
+- `flags` <Type text="String literal" /> <MetaInfo text='optional' />
   - When you set this optional argument to `'s'`, the function expects the value of the Base64-encoded `mac` in the `MessageMAC` argument to use the URL-safe character set with no padding.
 
   - When you do **not** set the value of `flags` to `'s'`, you must URL encode the Base64 value for `mac` in the `MessageMAC` argument.
@@ -484,7 +651,7 @@ For details on generating a MessageMAC, refer to [HMAC token generation](/waf/cu
 
 ## HMAC validation examples
 
-:::caution[Important]
+:::note
 
 When you do not use the optional `flags` argument for `is_timed_hmac_valid_v0()`, you must URL-encode the Base64 value for `mac` in the `MessageMAC` argument.
 

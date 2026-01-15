@@ -2,7 +2,7 @@
 pcx_content_type: concept
 title: Redirects
 sidebar:
-  order: 5
+  order: 6
 ---
 
 import { FeatureTable, Render } from "~/components";
@@ -19,12 +19,13 @@ Use the following Cloudflare products to perform URL redirects, according to you
 
 <Render
 	file="rules-requirements"
-	params={{ one: "Single Redirects and Bulk Redirects require" }}
+	product="rules"
+	params={{ sentenceIntro: "Single Redirects and Bulk Redirects require" }}
 />
 
 ## Redirect Rules templates
 
-<Render file="rules-templates" />
+<Render file="rules-templates" product="rules" />
 
 ## Availability
 
@@ -46,9 +47,10 @@ Single Redirects features and quotas are per zone and depend on the zone plan.
 
 ## Execution order
 
-<Render file="product-execution-order" />
+<Render file="product-execution-order" product="rules" />
 
 <Render
 	file="troubleshoot-rules-with-trace"
-	params={{ one: "URL redirects" }}
+	product="rules"
+	params={{ rulesFeatureName: "URL redirects" }}
 />

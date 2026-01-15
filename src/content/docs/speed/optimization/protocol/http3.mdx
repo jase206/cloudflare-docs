@@ -35,12 +35,12 @@ To enable **HTTP/3** in the dashboard:
 
 1. Log into the [Cloudflare dashboard](https://dash.cloudflare.com).
 2. Select your account and zone.
-3. Go to **Speed** > **Optimization**.
+3. Go to **Speed** > **Settings**.
 4. Go to **Protocol Optimization**.
 5. For **HTTP/3**, switch the toggle to **On**.
 
 </TabItem> <TabItem label="API">
 
-To enable **HTTP/3** with the API, send a [`PATCH`](/api/operations/zone-settings-edit-single-setting) request with `http3` as the setting name in the URI path, and the `value` parameter set to `"on"`.
+To enable **HTTP/3** with the API, send a [`PATCH`](/api/resources/zones/subresources/settings/methods/edit/) request with `http3` as the setting name in the URI path, and the `value` parameter set to `"on"`.
 
 </TabItem> </Tabs>

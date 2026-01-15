@@ -2,6 +2,7 @@
 pcx_content_type: troubleshooting
 source: https://support.cloudflare.com/hc/en-us/articles/4667724478349--You-have-reached-your-quota-for-the-requested-resource-Code-2005-
 title: Troubleshooting
+description: Troubleshoot issues with Client certificates
 head:
   - tag: title
     content: Troubleshooting | Custom certificates
@@ -23,6 +24,12 @@ openssl x509 -in certificate.crt -noout -text
 
 Then, make sure all the information is correct before uploading.
 
+## Moved domains
+
+If you move a domain without deleting the custom certificate from the previous zone, the certificate may still [take precedence](/ssl/reference/certificate-and-hostname-priority/) and be presented to your visitors, until the previous zone is [deleted](/dns/zone-setups/reference/domain-status/).
+
+Refer to [Move a domain between Cloudflare accounts](/fundamentals/manage-domains/move-domain/#issue-new-certificates) for details.
+
 ## Let's Encrypt chain update
 
 As Let's Encrypt - one of the [certificate authorities (CAs)](/ssl/reference/certificate-authorities/) used by Cloudflare - has announced changes in its [chain of trust](/ssl/concepts/#chain-of-trust), you may face issues.
@@ -30,7 +37,7 @@ As Let's Encrypt - one of the [certificate authorities (CAs)](/ssl/reference/cer
 If you are using a Let's Encrypt certificate uploaded by yourself as a custom certificate, consider the following:
 
 - If you use **compatible** or **modern** [bundle method](/ssl/edge-certificates/custom-certificates/bundling-methodologies/) and have uploaded your certificate before September 9, 2024, [update your custom certificate](/ssl/edge-certificates/custom-certificates/uploading/#update-an-existing-custom-certificate) so that it can be bundled with the new chain.
-- If you use **user-defined** bundle method, make sure that your certificates uploaded after September 30, 2024, do not use the Let's Encrypt cross-signed chain. For details, refer to the [full migration guide](/ssl/reference/migration-guides/lets-encrypt-chain/).
+- If you use **user-defined** bundle method, make sure that your certificates uploaded after September 30, 2024, do not use the Let's Encrypt cross-signed chain.
 
 ## Error codes
 
@@ -40,6 +47,8 @@ If you are using a Let's Encrypt certificate uploaded by yourself as a custom ce
 
 The certificate you are trying to upload is invalid. For example, there might be extra lines, or the BEGIN/END text is not correct, or extra characters are added following a copy/paste.
 
+In the case of an update with the [PATCH API call](/api/resources/custom_certificates/methods/edit/), it can mean the path parameter `{custom_certificate_id}` is invalid.
+
 **Solution**
 
 Carefully check the content of the certificate. You may use `openssl` to check all the details of your certificate:
@@ -47,6 +56,8 @@ Carefully check the content of the certificate. You may use `openssl` to check a
 ```bash
 openssl x509 -in certificate.crt -noout -text
 ```
+
+When using the API, carefully check the `{custom_certificate_id}` path parameter. You can confirm the certificate ID by [listing the existing custom certificates](/api/resources/custom_certificates/methods/list/) (`id` in the response).
 
 ### You have reached the maximum number of custom certificates. (Code: 1212)
 
@@ -88,7 +99,7 @@ If you try to upload a certificate **type** but have already reached your quota,
 
 **Solution**
 
-First, check your custom certificate entitlements at **SSL/TLS** > **Edge Certificates**.
+First, check your custom certificate entitlements on the [**Edge Certificates**](https://dash.cloudflare.com/?to=/:account/:zone/ssl-tls/edge-certificates) page.
 
 Then, when actually uploading or editing the certificate, make sure you select the appropriate option for **Legacy Client Support**.
 

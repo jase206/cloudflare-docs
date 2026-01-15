@@ -1,53 +1,39 @@
 ---
-import { getCollection, getEntry, type InferEntrySchema } from "astro:content";
+import { getCollection, getEntry, type CollectionEntry } from "astro:content";
 import { formatDistance } from "date-fns";
+
+import { process } from "~/util/rehype";
+import rehypeExternalLinks from "~/plugins/rehype/external-links";
+
+type DocsEntry = CollectionEntry<"docs">;
+
+const tutorials: Array<DocsEntry> = [];
 
 const currentSection = Astro.params.slug?.split("/")[0];
 const currentProduct = await getEntry("products", currentSection!);
 
 if (!currentProduct) {
 	throw new Error(
-		`[ListTutorials] Unable to find product YAML for ${currentSection}.`,
+		`[ListTutorials] Unable to find product YAML for ${currentSection}.`
 	);
 }
 
-const productTitle = currentProduct.data.product.title;
+const productID = currentProduct.id;
 
-const tutorials = await getCollection("docs", (entry) => {
+const docs = await getCollection("docs", (entry) => {
 	return (
 		// pcx_content_type: tutorial
 		entry.data.pcx_content_type === "tutorial" &&
 		// /src/content/r2/**/*.mdx
-		(entry.slug.startsWith(`${currentSection}/`) ||
+		(entry.id.startsWith(`${currentSection}/`) ||
 			// products: [R2]
-			entry.data.products?.some(
-				(v: string) => v.toUpperCase() === productTitle.toUpperCase(),
-			))
+			entry.data.products?.some((product) => product.id === productID))
 	);
 });
 
-type VideoEntry = InferEntrySchema<"videos">["entries"][number];
-type FinalTutorials = {
-	slug?: string;
-	data: InferEntrySchema<"docs"> | VideoEntry;
-}[];
-const finalTutorials: FinalTutorials = tutorials.map((x) => ({
-	slug: x.slug,
-	data: x.data,
-}));
+tutorials.push(...docs);
 
-const videos = await getEntry("videos", "index");
-const filteredVideos = videos.data.entries.filter((x) =>
-	x.products.some(
-		(v: string) => v.toUpperCase() === productTitle.toUpperCase(),
-	),
-);
-
-if (filteredVideos) {
-	filteredVideos.forEach((x) => finalTutorials.push({ data: x }));
-}
-
-finalTutorials.sort((a, b) => Number(b.data.updated) - Number(a.data.updated));
+tutorials.sort((a, b) => Number(b.data.reviewed) - Number(a.data.reviewed));
 
 const timeAgo = (date?: Date) => {
 	if (!date) return undefined;
@@ -60,22 +46,26 @@ const timeAgo = (date?: Date) => {
 		<tr>
 			<td>Name</td>
 			<td>Last Updated</td>
-			<td>Type</td>
 			<td>Difficulty</td>
 		</tr>
 	</thead>
 	<tbody>
 		{
-			finalTutorials.map((tutorial) => {
-				// @ts-expect-error TODO: improve types
-				const href = tutorial.slug ? `/${tutorial.slug}` : tutorial.data.link;
+			tutorials.map(async (tutorial) => {
+				const title = tutorial.data.title;
+
+				const href = `/${tutorial.id}/`;
+
+				const anchor = await process(`<a href=${href}>${title}</a>`, [
+					rehypeExternalLinks,
+				]);
+
 				return (
 					<tr>
 						<td>
-							<a href={href}>{tutorial.data.title}</a>
+							<Fragment set:html={anchor} />
 						</td>
-						<td>{timeAgo(tutorial.data.updated)}</td>
-						<td>{tutorial.data.content_type}</td>
+						<td>{timeAgo(tutorial.data.reviewed)}</td>
 						<td>{tutorial.data.difficulty}</td>
 					</tr>
 				);
